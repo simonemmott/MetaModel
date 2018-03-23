@@ -11,15 +11,26 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.k2.Util.classes.ClassUtil;
+import com.k2.MetaModel.annotations.MetaService;
 import com.k2.MetaModel.annotations.MetaSubType;
+import com.k2.Util.StringUtil;
 import com.k2.Util.Version.Version;
 
 public class MetaModelService implements Comparable<MetaModelService>{
 	
 	private static final Logger logger = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
-	private StaticMetaService staticService;
-	private MetaModel metaApp;
+	static MetaModelService reflect(MetaModel metaModel, Class<?> serviceClass) {
+		return new MetaModelService(metaModel, serviceClass);
+	}
+
+	private MetaModel metaModel;
+	private MetaService metaService;
+	
+	private String alias;
+	private String title;
+	private Version version;
+	private String[] modelPackageNames;
 	
 	private Set<MetaModelClass<?>> managedClasses = new TreeSet<MetaModelClass<?>>();
 	private Map<String, MetaModelClass<?>> managedClassesByAlias = new TreeMap<String, MetaModelClass<?>>();
@@ -29,13 +40,29 @@ public class MetaModelService implements Comparable<MetaModelService>{
 	private Set<MetaModelTransient<?>> managedTransients = new TreeSet<MetaModelTransient<?>>();
 	private Set<MetaModelSubType<?,?>> managedSubTypes = new TreeSet<MetaModelSubType<?,?>>();
 	
-	MetaModelService(MetaModel metaApp, StaticMetaService staticService) {
-		logger.info("{} implements service '{}' ({})", metaApp.title(), staticService.title(), staticService.alias());
-		this.metaApp = metaApp;
-		this.staticService = staticService;
-		for (String packageName : staticService.typePackageNames()) {
-			logger.info("Scanning package {} and sub packages for implementations of @MetaClass", packageName);
-			for (Class<?> k2ManagedTypeClass : ClassUtil.getClasses(packageName, com.k2.MetaModel.annotations.MetaClass.class)) {
+	private MetaModelService(MetaModel metaModel, Class<?> serviceClass) {
+		if ( ! serviceClass.isAnnotationPresent(MetaService.class))
+			throw new MetaModelError("The given service configuration class {} does not implment the @MetaService annotation.", serviceClass.getName());
+		
+		this.metaModel = metaModel;
+
+		metaService = serviceClass.getAnnotation(MetaService.class);
+		
+		alias = (StringUtil.isSet(metaService.alias())) ? metaService.alias() : ClassUtil.alias(serviceClass);
+		title = (StringUtil.isSet(metaService.title())) ? metaService.title() : ClassUtil.title(serviceClass);
+
+		logger.info("{} implements service '{}' ({})", metaModel.title(), title, alias);
+		
+		version = Version.create(metaService.version().major(), metaService.version().minor(), metaService.version().point(), metaService.version().build());
+
+		modelPackageNames = new String[metaService.modelPackageNames().length];
+		
+		for (int i=0; i< metaService.modelPackageNames().length; i++) {
+			
+			modelPackageNames[i] = (StringUtil.isSet(metaService.modelPackageNames()[i])) ? metaService.modelPackageNames()[i] : serviceClass.getPackage().getName()+".model";
+			
+			logger.info("Scanning package {} and sub packages for implementations of @MetaClass", modelPackageNames[i]);
+			for (Class<?> k2ManagedTypeClass : ClassUtil.getClasses(modelPackageNames[i], com.k2.MetaModel.annotations.MetaClass.class)) {
 				MetaModelClass<?> metaClass = MetaModelClass.forClass(this, k2ManagedTypeClass);
 				managedClasses.add(metaClass);
 				managedClassesByAlias.put(metaClass.alias(), metaClass);
@@ -58,10 +85,10 @@ public class MetaModelService implements Comparable<MetaModelService>{
 
 	@Override
 	public int compareTo(MetaModelService o) {
-		return staticService.alias().compareTo(o.staticService.alias());
+		return alias.compareTo(o.alias);
 	}
 	
-	public MetaModel getMetaModel() { return metaApp; }
+	public MetaModel getMetaModel() { return metaModel; }
 	
 	public MetaModelClass<?> getMetaClass(String alias) {
 		MetaModelClass<?> mCls = managedClassesByAlias.get(alias);
@@ -83,9 +110,11 @@ public class MetaModelService implements Comparable<MetaModelService>{
 	public Set<MetaModelEmbeddable<?>> getMamagedEmbeddables() { return managedEmbeddables; }
 	public Set<MetaModelTransient<?>> getMamagedTransients() { return managedTransients; }
 	
-	public String alias() { return staticService.alias(); }
-	public String title() { return staticService.title(); }
-	public Version version() { return staticService.version(); }
-	public String description() { return staticService.description(); }
+	public String alias() { return alias; }
+	public String title() { return title; }
+	public Version version() { return version; }
+	public String description() { return metaService.description(); }
+	public String[] modelPackageNames() { return modelPackageNames; }
+
 
 }

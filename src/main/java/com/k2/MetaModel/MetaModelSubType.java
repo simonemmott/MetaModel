@@ -1,11 +1,17 @@
 package com.k2.MetaModel;
 
 import java.lang.invoke.MethodHandles;
+import java.lang.reflect.Field;
+import java.util.Map;
+import java.util.Set;
+import java.util.TreeMap;
+import java.util.TreeSet;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.k2.MetaModel.annotations.MetaSubType;
+import com.k2.MetaModel.annotations.MetaSubTypeValue;
 import com.k2.Util.StringUtil;
 
 public class MetaModelSubType<C,E> implements Comparable<MetaModelSubType<?,?>> {
@@ -19,6 +25,10 @@ public class MetaModelSubType<C,E> implements Comparable<MetaModelSubType<?,?>> 
 	private MetaModelClass<C> metaModelClass;
 	protected Class<E> enumClass;
 	public Class<E> getEnumerationClass() { return enumClass; }
+	private Set<MetaModelSubTypeValue<C,E>> subTypeValues = new TreeSet<MetaModelSubTypeValue<C,E>>();
+	private Map<String,MetaModelSubTypeValue<C,E>> subTypeValuesByName = new TreeMap<String,MetaModelSubTypeValue<C,E>>();
+	public Set<MetaModelSubTypeValue<C,E>> getTypeValues() { return subTypeValues; }
+	public MetaModelSubTypeValue<C,E> getTypeValuesbyName(String name) { return subTypeValuesByName.get(name); }
 
 	MetaModelSubType(MetaModelClass<C> metaModelClass, Class<E> enumClass) {
 		this.metaModelClass = metaModelClass;
@@ -30,6 +40,15 @@ public class MetaModelSubType<C,E> implements Comparable<MetaModelSubType<?,?>> 
 		MetaSubType subType = enumClass.getAnnotation(MetaSubType.class);
 		title = StringUtil.nvl(subType.title(), StringUtil.splitCamelCase(enumClass.getSimpleName()));
 		description = subType.description();
+		
+		for (Field f : enumClass.getDeclaredFields()) {
+			if (f.isAnnotationPresent(MetaSubTypeValue.class)) {
+				MetaModelSubTypeValue<C,E> typeValue = MetaModelSubTypeValue.forValue(this, f);
+				subTypeValues.add(typeValue);
+				subTypeValuesByName.put(typeValue.name(), typeValue);
+			}
+		}
+		
 		metaModelClass.declaresSubType(this);
 		logger.info("Managing Subtype {} ({})", title, enumClass.getName());
 	}

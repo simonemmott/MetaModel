@@ -1,6 +1,7 @@
 package com.k2.MetaModel;
 
 import java.lang.invoke.MethodHandles;
+import java.net.MalformedURLException;
 import java.net.URL;
 import java.util.HashMap;
 import java.util.Map;
@@ -10,41 +11,71 @@ import java.util.TreeSet;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.k2.MetaModel.annotations.MetaApplication;
+import com.k2.Util.StringUtil;
 import com.k2.Util.Version.Version;
+import com.k2.Util.classes.ClassUtil;
 
 public class MetaModel {
 	
 	private static final Logger logger = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
-	private StaticMetaApplication staticApp;
+	private MetaApplication appConfig;
+	private Version version;
+	private URL website;
+	private String alias;
+	private String title;
+	private Class<?> appConfigClass;
 	
 	Set<MetaModelService> implementedServices = new TreeSet<MetaModelService>();
 	Map<String, MetaModelService> servicesByAlias = new HashMap<String, MetaModelService>();
 	
-	public static MetaModel prepare(Class<? extends StaticMetaApplication> metaApplicationClass) {
-		return new MetaModel(metaApplicationClass);
+	public static MetaModel reflect(Class<?> appConfigClass) {
+		return new MetaModel(appConfigClass);
 	}
 
-	private MetaModel(Class<? extends StaticMetaApplication> metaApplicationClass ) {
-		logger.info("Extracting static application data for {}", metaApplicationClass.getName());
-		staticApp = StaticMetaApplication.application(metaApplicationClass);
+	private MetaModel(Class<?> appConfigClass ) {
+		this.appConfigClass = appConfigClass;
+		if (!appConfigClass.isAnnotationPresent(MetaApplication.class))
+			throw new MetaModelError("The supplied application class {} is not annotated with @MetaApplication. Unable to extract the application metamodel");
+		logger.info("Extracting static application data for {}", appConfigClass.getName());
 		
-		logger.info("Generating metadata for application: {}: ({})", staticApp.title(), staticApp.alias());
+		appConfig = appConfigClass.getAnnotation(MetaApplication.class);
+		alias = (StringUtil.isSet(appConfig.alias())) ? appConfig.alias() : ClassUtil.alias(appConfigClass);
+		title = (StringUtil.isSet(appConfig.title())) ? appConfig.title() : ClassUtil.title(appConfigClass);
+
+		logger.info("Generating metadata for application: {}: ({})", title, alias);
+
+		version = Version.create(appConfig.version().major(), appConfig.version().minor(), appConfig.version().point(), appConfig.version().build());
+
+		if (StringUtil.isSet(appConfig.website())) {
+			try {
+				website = new URL(appConfig.website()); 
+			} catch (MalformedURLException e) {
+				try {
+					website = new URL("http://"+appConfig.website());
+				} catch (MalformedURLException e1) {
+					logger.info("Malformed URL {} - {}", e, appConfig.website(), e.getMessage());
+				}
+			}
+		}
+		
 		
 		logger.info("Extracting implemented services");
-		for (Class<? extends StaticMetaService> serviceClass : staticApp.implementedServiceClasses()) {
-			MetaModelService service = new MetaModelService(this, StaticMetaService.service(serviceClass));
+		for (Class<?> serviceClass : appConfig.services()) {
+			MetaModelService service = MetaModelService.reflect(this, serviceClass);
 			implementedServices.add(service);
 			servicesByAlias.put(service.alias(), service);
 		}
 	}
 
-	public String alias() { return staticApp.alias(); }
-	public String title() { return staticApp.title(); }
-	public String description() { return staticApp.description(); }
-	public Version version() { return staticApp.version(); }
-	public String organisation() { return staticApp.organisation(); }
-	public URL website() { return staticApp.website(); }
+	public String alias() { return alias; }
+	public String title() { return title; }
+	public String description() { return appConfig.description(); }
+	public Version version() { return version; }
+	public String organisation() { return appConfig.organisation(); }
+	public URL website() { return website; }
+	public Class<?> configurationClass() { return appConfigClass; }
 	
 	public Set<MetaModelService> implementedServices() { return implementedServices; }
 	public MetaModelService metaModelService(String alias) {

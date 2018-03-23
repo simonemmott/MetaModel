@@ -1,13 +1,16 @@
 package com.k2.MetaModel;
 
 import java.lang.invoke.MethodHandles;
+import java.util.Map;
 import java.util.Set;
+import java.util.TreeMap;
 import java.util.TreeSet;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.k2.Util.StringUtil;
+import com.k2.Util.classes.ClassUtil;
 
 public class MetaModelClass<T> implements Comparable<MetaModelClass<?>> {
 	
@@ -35,8 +38,8 @@ public class MetaModelClass<T> implements Comparable<MetaModelClass<?>> {
 		if (cls.isAnnotationPresent(com.k2.MetaModel.annotations.MetaClass.class)) {
 			managedClass = cls;
 			com.k2.MetaModel.annotations.MetaClass annotation = cls.getAnnotation(com.k2.MetaModel.annotations.MetaClass.class);
-			title = StringUtil.nvl(annotation.title(), StringUtil.splitCamelCase(cls.getSimpleName()));
-			alias = StringUtil.nvl(annotation.alias(), StringUtil.aliasCase(cls.getSimpleName()));
+			title = StringUtil.nvl(annotation.title(), ClassUtil.title(cls));
+			alias = StringUtil.nvl(annotation.alias(), ClassUtil.alias(cls));
 			description = annotation.description();
 			logger.info("Managing {} ({})", title, cls.getName());
 		} else {
@@ -95,10 +98,13 @@ public class MetaModelClass<T> implements Comparable<MetaModelClass<?>> {
 	}
 
 	private Set<MetaModelSubType<T, ?>> declaredSubTypes = new TreeSet<MetaModelSubType<T, ?>>();
-	public void declaresSubType(MetaModelSubType<T, ?> metaModelSubType) {
+	private Map<String, MetaModelSubType<T, ?>> subTypesByName = new TreeMap<String, MetaModelSubType<T, ?>>();
+	void declaresSubType(MetaModelSubType<T, ?> metaModelSubType) {
 		declaredSubTypes.add(metaModelSubType);
+		subTypesByName.put(metaModelSubType.name(), metaModelSubType);
 	}
 	public Set<MetaModelSubType<T, ?>> getDeclaredSubTypes() { return declaredSubTypes; }
+	public MetaModelSubType<T, ?> getSubTypesByName(String name) { return subTypesByName.get(name); }
 
 
 }
