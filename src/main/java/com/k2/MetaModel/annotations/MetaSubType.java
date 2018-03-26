@@ -13,9 +13,4 @@ import com.k2.Util.StringUtil;
 @Meta
 public @interface MetaSubType {
 	
-	String description() default "";
-
-	String title() default "";
-	
-
 }

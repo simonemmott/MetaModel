@@ -11,7 +11,7 @@ import com.k2.Util.StringUtil;
 @Retention(RUNTIME)
 @Target(TYPE)
 @Meta
-@MetaClass
+@MetaType
 public @interface MetaTransient {
 	
 	

@@ -11,9 +11,11 @@ import com.k2.Util.StringUtil;
 @Retention(RUNTIME)
 @Target(TYPE)
 @Meta
-@MetaType
-public @interface MetaEntity {
+public @interface MetaType {
 	
+	String title() default "";
+	String alias() default "";
+	String description() default "";
 	
 
 }

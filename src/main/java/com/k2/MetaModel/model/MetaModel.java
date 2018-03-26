@@ -1,4 +1,4 @@
-package com.k2.MetaModel;
+package com.k2.MetaModel.model;
 
 import java.lang.invoke.MethodHandles;
 import java.net.MalformedURLException;
@@ -11,6 +11,7 @@ import java.util.TreeSet;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.k2.MetaModel.MetaModelError;
 import com.k2.MetaModel.annotations.MetaApplication;
 import com.k2.Util.StringUtil;
 import com.k2.Util.Version.Version;

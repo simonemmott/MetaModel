@@ -1,4 +1,4 @@
-package com.k2.MetaModel;
+package com.k2.MetaModel.model;
 
 import java.lang.invoke.MethodHandles;
 import java.lang.reflect.Field;
@@ -6,7 +6,9 @@ import java.lang.reflect.Field;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.k2.MetaModel.MetaModelError;
 import com.k2.MetaModel.annotations.MetaSubTypeValue;
+import com.k2.MetaModel.model.types.MetaModelSubType;
 import com.k2.Util.StringUtil;
 import com.k2.Util.classes.ClassUtil;
 
@@ -25,7 +27,7 @@ public class MetaModelSubTypeValue<C,E> implements Comparable<MetaModelSubTypeVa
 
 	MetaModelSubTypeValue(MetaModelSubType<C,E> type, Field enumValue) {
 		if ( ! enumValue.isAnnotationPresent(MetaSubTypeValue.class))
-			throw new MetaModelError("The type value {}.{} is not annotated with the @MetaSubTypeValue annotation", type.enumClass.getName(), enumValue.getName());
+			throw new MetaModelError("The type value {}.{} is not annotated with the @MetaSubTypeValue annotation", type.getEnumClass().getName(), enumValue.getName());
 		this.type = type;
 		this.enumValue = enumValue;
 		

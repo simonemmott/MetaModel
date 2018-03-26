@@ -11,13 +11,16 @@ import javax.persistence.JoinColumn;
 import javax.persistence.OneToMany;
 import javax.persistence.Table;
 
+import com.k2.MetaModel.annotations.MetaType;
 import com.k2.MetaModel.annotations.MetaClass;
 import com.k2.MetaModel.annotations.MetaEntity;
+import com.k2.MetaModel.annotations.MetaField;
 import com.k2.MetaModel.annotations.MetaVersion;
 
 import example.app.serviceA.model.EntityA1;
 
 @MetaVersion(major=0, minor=0, point=1)
+@MetaType
 @MetaClass
 @MetaEntity
 @Entity
@@ -25,6 +28,7 @@ import example.app.serviceA.model.EntityA1;
 public class EntityB2 {
 
 	// Name ------------------------------------------------------------------------------
+	@MetaField
 	@Id
 	@Column(name="ALIAS", nullable=false, length=50)
 	private String alias;

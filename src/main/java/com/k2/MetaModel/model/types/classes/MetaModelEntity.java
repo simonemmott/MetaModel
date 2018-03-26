@@ -1,4 +1,4 @@
-package com.k2.MetaModel;
+package com.k2.MetaModel.model.types.classes;
 
 import java.lang.invoke.MethodHandles;
 
@@ -8,7 +8,10 @@ import javax.persistence.Table;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.k2.MetaModel.MetaModelError;
 import com.k2.MetaModel.annotations.MetaVersion;
+import com.k2.MetaModel.model.MetaModelService;
+import com.k2.MetaModel.model.types.MetaModelClass;
 import com.k2.Util.StringUtil;
 import com.k2.Util.Version.Version;
 
@@ -22,10 +25,7 @@ public class MetaModelEntity<T> extends MetaModelClass<T> {
 	private String entityName;
 	public String entityName() { return entityName; }
 	
-	private Version version;
-	public Version version() { return version; }
-	
-	MetaModelEntity(MetaModelService metaModelService, Class<T> cls) {
+	public MetaModelEntity(MetaModelService metaModelService, Class<T> cls) {
 		super(metaModelService, cls);
 		if (cls.isAnnotationPresent(Table.class)) {
 			Table ann = cls.getAnnotation(Table.class);
@@ -39,11 +39,6 @@ public class MetaModelEntity<T> extends MetaModelClass<T> {
 		} else {
 			throw new MetaModelError("The class {} annotated with @MetaEntity is not annotated with @Entity", cls.getName());
 		}
-		if (cls.isAnnotationPresent(MetaVersion.class)) {
-			MetaVersion ann = cls.getAnnotation(MetaVersion.class);
-			version = Version.create(ann.major(), ann.minor(), ann.point());
-		}
-		logger.info("As a managed 'Persistent' class with the name {} persisting in table {}.", entityName, tableName);
 		
 	}
 

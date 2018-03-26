@@ -12,7 +12,7 @@ import com.k2.Util.StringUtil;
 @Target(TYPE)
 @Meta
 @MetaType
-public @interface MetaEntity {
+public @interface MetaInterface {
 	
 	
 

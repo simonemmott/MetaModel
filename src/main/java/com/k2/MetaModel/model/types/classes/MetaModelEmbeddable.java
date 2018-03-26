@@ -1,4 +1,4 @@
-package com.k2.MetaModel;
+package com.k2.MetaModel.model.types.classes;
 
 import java.lang.invoke.MethodHandles;
 
@@ -9,7 +9,10 @@ import javax.persistence.Table;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.k2.MetaModel.MetaModelError;
 import com.k2.MetaModel.annotations.MetaVersion;
+import com.k2.MetaModel.model.MetaModelService;
+import com.k2.MetaModel.model.types.MetaModelClass;
 import com.k2.Util.StringUtil;
 import com.k2.Util.Version.Version;
 
@@ -20,10 +23,7 @@ public class MetaModelEmbeddable<T> extends MetaModelClass<T> {
 	private String tableName;
 	public String tableName() { return tableName; }
 	
-	private Version version;
-	public Version version() { return version; }
-	
-	MetaModelEmbeddable(MetaModelService metaModelService, Class<T> cls) {
+	public MetaModelEmbeddable(MetaModelService metaModelService, Class<T> cls) {
 		super(metaModelService, cls);
 		if ( ! cls.isAnnotationPresent(Embeddable.class))
 			throw new MetaModelError("The class {} annotated with @MetaEmbeddable is not annotated with @Embeddable", cls.getName());
@@ -33,11 +33,6 @@ public class MetaModelEmbeddable<T> extends MetaModelClass<T> {
 		} else {
 			tableName = cls.getSimpleName();
 		}
-		if (cls.isAnnotationPresent(MetaVersion.class)) {
-			MetaVersion ann = cls.getAnnotation(MetaVersion.class);
-			version = Version.create(ann.major(), ann.minor(), ann.point());
-		}
-		logger.info("As a managed 'Embeddable' class persisting in table {} when not embedded.", tableName);
 		
 	}
 

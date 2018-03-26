@@ -11,11 +11,9 @@ import com.k2.Util.StringUtil;
 @Retention(RUNTIME)
 @Target(TYPE)
 @Meta
+@MetaType
 public @interface MetaClass {
 	
-	String title() default "";
-	String alias() default "";
-	String description() default "";
 	
 
 }
