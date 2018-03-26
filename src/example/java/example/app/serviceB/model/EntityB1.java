@@ -20,13 +20,17 @@ import com.k2.MetaModel.annotations.MetaClass;
 import com.k2.MetaModel.annotations.MetaEntity;
 import com.k2.MetaModel.annotations.MetaField;
 import com.k2.MetaModel.annotations.MetaLinkField;
+import com.k2.MetaModel.annotations.MetaOwningSet;
 import com.k2.MetaModel.annotations.MetaVersion;
+
+import example.app.serviceA.model.EntityA2;
 
 @MetaVersion(major=0, minor=0, point=1)
 @MetaType
 @MetaClass
 @MetaEntity
 @Entity
+@MetaOwningSet(owningClass=EntityB2.class, name="b1s")
 @Table(name="TYPEB1S")
 public class EntityB1 {
 

@@ -1,7 +1,10 @@
 package com.k2.MetaModel.model;
 
 import java.lang.invoke.MethodHandles;
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.TreeMap;
@@ -70,7 +73,10 @@ public class MetaModelService implements Comparable<MetaModelService>{
 	private Map<String, MetaModelTransient<?>> managedTransientsByAlias = new TreeMap<String, MetaModelTransient<?>>();
 	private Map<Class<?>, MetaModelTransient<?>> managedTransientsByClass = new HashMap<Class<?>, MetaModelTransient<?>>();
 	
+	private List<LinkedMetaType> links = new ArrayList<LinkedMetaType>();
+	public void addLink(LinkedMetaType link) { this.links.add(link); }
 	
+	@SuppressWarnings("unchecked")
 	private MetaModelService(MetaModel metaModel, Class<?> serviceClass) {
 		if ( ! serviceClass.isAnnotationPresent(MetaService.class))
 			throw new MetaModelError("The given service configuration class {} does not implment the @MetaService annotation.", serviceClass.getName());
@@ -97,6 +103,14 @@ public class MetaModelService implements Comparable<MetaModelService>{
 				register(k2ManagedTypeClass);
 			}
 		}
+
+		while (links.size() > 0) {
+			List<LinkedMetaType> workingList = Arrays.asList(links.toArray(new LinkedMetaType[links.size()]));
+			links.clear();
+			for (LinkedMetaType link : workingList) 
+				link.setMetaModelType(reflect(link.forType()));
+		}
+		links = null;
 	}
 
 	public <T> MetaModelType<T> reflect(Class<T> cls) {

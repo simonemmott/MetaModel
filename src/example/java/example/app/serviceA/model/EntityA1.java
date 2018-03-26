@@ -24,6 +24,7 @@ import com.k2.MetaModel.annotations.MetaClass;
 import com.k2.MetaModel.annotations.MetaEntity;
 import com.k2.MetaModel.annotations.MetaField;
 import com.k2.MetaModel.annotations.MetaLinkField;
+import com.k2.MetaModel.annotations.MetaOwningSet;
 import com.k2.MetaModel.annotations.MetaSubType;
 import com.k2.MetaModel.annotations.MetaSubTypeValue;
 import com.k2.MetaModel.annotations.MetaVersion;
@@ -33,6 +34,7 @@ import com.k2.Util.classes.ClassUtil;
 @MetaType(description="Test entity A1")
 @MetaClass
 @MetaEntity
+@MetaOwningSet(owningClass=EntityA2.class, name="a1s")
 @Entity
 @Table(name="A1S")
 @Inheritance(strategy=InheritanceType.JOINED)

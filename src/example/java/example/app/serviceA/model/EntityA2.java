@@ -18,6 +18,7 @@ import com.k2.MetaModel.annotations.MetaType;
 import com.k2.MetaModel.annotations.MetaClass;
 import com.k2.MetaModel.annotations.MetaEntity;
 import com.k2.MetaModel.annotations.MetaField;
+import com.k2.MetaModel.annotations.MetaOwningSet;
 import com.k2.MetaModel.annotations.MetaVersion;
 
 @MetaVersion(major=0, minor=0, point=1)
@@ -37,6 +38,7 @@ public class EntityA2 {
 	public void setAlias(String alias) { this.alias = alias; }
 
 	// A1s -------------------------------------------------------------------------------
+	@MetaOwningSet
 	@OneToMany(cascade=CascadeType.ALL)
     @JoinColumn(name="ALIAS", referencedColumnName = "A2ALIAS")
 	private Set<EntityA1> a1s;

@@ -26,6 +26,7 @@ import com.k2.Util.Version.Version;
 import example.app.AppConfig;
 import example.app.serviceA.model.EntityA1;
 import example.app.serviceA.model.EntityA1AA;
+import example.app.serviceA.model.EntityA2;
 
 
 public class MetaModelBasicTests {
@@ -157,6 +158,8 @@ public class MetaModelBasicTests {
 		MetaModelClass<?> entityA1A = testServiceA.getMetaClass("entityA1A");
 		MetaModelClass<?> entityA1AA = testServiceA.getMetaClass(EntityA1AA.class);
 		
+		logger.info("EntityA1AA alias: {}", entityA1AA.alias());
+		
 		assertEquals(8, entityA1.getDeclaredFields().size());
 		assertEquals(2, entityA1A.getDeclaredFields().size());
 		assertEquals(1, entityA1AA.getDeclaredFields().size());
@@ -271,6 +274,23 @@ public class MetaModelBasicTests {
 	@Test
 	public void ownedDataTest() {
 		
+		assertEquals(2, testServiceA.getManagedSubTypes().size());
+		
+		MetaModelClass<?> entityA1 = testServiceA.getMetaClass("entityA1");
+		MetaModelClass<?> entityA2 = testServiceA.getMetaClass("entityA2");
+		
+		assertNotNull(entityA1);
+		assertNotNull(entityA2);
+		
+		assertTrue(entityA1.isOwned());
+		assertFalse(entityA2.isOwned());
+		assertEquals(EntityA2.class, entityA1.getOwningClass());
+		assertEquals("a1s", entityA1.getOwngingFieldName());
+		
+		assertTrue(entityA2.hasOwnedClasses());
+		assertEquals(1, entityA2.getOwningMetaSets().size());
+		assertEquals(EntityA1.class, entityA2.getOwnedMetaClasses().get("entityA1").getManagedClass());
+
 	}
 	
 	@Test

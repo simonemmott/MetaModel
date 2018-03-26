@@ -23,9 +23,11 @@ import org.slf4j.LoggerFactory;
 import com.k2.MetaModel.MetaModelError;
 import com.k2.MetaModel.annotations.MetaClass;
 import com.k2.MetaModel.annotations.MetaField;
+import com.k2.MetaModel.annotations.MetaOwningSet;
 import com.k2.MetaModel.annotations.MetaVersion;
 import com.k2.MetaModel.model.MetaModelColumn;
 import com.k2.MetaModel.model.MetaModelField;
+import com.k2.MetaModel.model.MetaModelOwningSet;
 import com.k2.MetaModel.model.MetaModelService;
 import com.k2.MetaModel.model.MetaModelTable;
 import com.k2.MetaModel.model.MetaModelType;
@@ -48,6 +50,8 @@ public class MetaModelClass<T> extends MetaModelType<T> {
 	private Map<String, MetaModelField<T,?>> declaredMetaFields = null;
 	private MetaModelTable<T> metaTable = null;
 	private Version version;
+	private MetaModelOwningSet<?,T> owningMetaSet = null;
+	private Map<String, MetaModelOwningSet<T,?>> owningMetaSets = null;
 	
 	protected MetaModelClass(String alias, String title, String description, Class<T> cls) {
 		super(alias, title, description, cls);
@@ -86,6 +90,10 @@ public class MetaModelClass<T> extends MetaModelType<T> {
 		for (Method m : ClassUtil.getAnnotatedMethods(cls, MetaField.class)) {
 			addMetaField(MetaModelField.forMember(this, m.getReturnType(), m));
 		}
+		for (Field f : ClassUtil.getAnnotatedFields(cls,  MetaOwningSet.class)) {
+			addMetaField(MetaModelOwningSet.forField(this, f));
+		}
+			
 		if (discriminatorColumn != null) {
 			MetaModelColumn<T> discriminatorTypeColumn = getColumn(discriminatorColumn.name());
 			if (discriminatorTypeColumn == null)
@@ -96,6 +104,29 @@ public class MetaModelClass<T> extends MetaModelType<T> {
 		}
 	}
 
+	private void addMetaField(MetaModelOwningSet<T,?> owningMetaSet) {
+		if (owningMetaSets == null)
+			owningMetaSets = new TreeMap<String, MetaModelOwningSet<T,?>>();
+		owningMetaSets.put(owningMetaSet.alias(), owningMetaSet);
+	}
+	
+	public void setOwningMetaSet(MetaModelOwningSet<?,T> owningMetaSet) {
+		this.owningMetaSet = owningMetaSet;
+	}
+	
+	public boolean isOwned() { return (owningMetaSet != null); }
+	public Class<?> getOwningClass() { return owningMetaSet.owningClass(); }
+	public Field getOwningSet() { return owningMetaSet.getOwngingSet(); }
+	public String getOwngingFieldName() { return owningMetaSet.alias(); }
+	public boolean hasOwnedClasses() { return (owningMetaSets != null); }
+	public Map<String, MetaModelOwningSet<T,?>> getOwningMetaSets() { return owningMetaSets; }
+	public Map<String,MetaModelClass<?>> getOwnedMetaClasses() {
+		Map<String,MetaModelClass<?>> map = new TreeMap<String,MetaModelClass<?>>();
+		for(MetaModelOwningSet<T, ?> owningSet : owningMetaSets.values())
+			map.put(owningSet.ownedMetaClass().alias(),owningSet.ownedMetaClass());
+		return map;
+	}
+	
 	private void addSubMetaClass(MetaModelClass<?> subMetaClass) {
 		if (subMetaClasses == null)
 			subMetaClasses = new TreeMap<String, MetaModelClass<?>>();
