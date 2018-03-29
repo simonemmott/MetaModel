@@ -15,6 +15,4 @@ import example.app.serviceB.ServiceBConfig;
 		website="http://www.k2.com",
 		services= {ServiceAConfig.class, ServiceBConfig.class}
 		)
-public class AppConfig {
-
-}
+public class AppConfig {}

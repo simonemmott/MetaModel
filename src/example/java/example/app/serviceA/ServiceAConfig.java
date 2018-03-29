@@ -10,6 +10,4 @@ import com.k2.MetaModel.annotations.MetaVersion;
 		version=@MetaVersion(major=0, minor=1, point=2), 
 		modelPackageNames = { "example.app.serviceA.model" }
 		)
-public class ServiceAConfig {
-
-}
+public class ServiceAConfig { }
