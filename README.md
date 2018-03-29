@@ -67,7 +67,7 @@ Each K2 Application has one and only one `Application Configuration` class. This
 The *exact* implementation of the class annotated with the `@MetaApplication` annotation is irrelevant as the meta models reflection of the application is based entirely on the values of the `@MetaApplication` annotation.
 
 | Value | Description |
-|=======|=============|
+|-------|-------------|
 | alias | The alias of the application. This value is used internally to the K2 application when identifying the application configuration |
 
 
