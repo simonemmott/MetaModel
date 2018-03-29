@@ -52,6 +52,14 @@ service layer is encapsulated in the classes and their fields and methods.
 The meta model reflects the configuration classes of a K2 Application and the classes contained in each service implemented by the application and converts that data into an in memory structure in turn 
 providing support data and services to K2 Applications and their implemented services.
 
+The meta model for an application is created by reflecting the `Application Configuration` class of the application.
+
+The code below shows an example of creating a reflection of an applications configuration class.
+
+```java
+private MetaModel metaModel = MetaModel.reflect(AppConfig.class);
+```
+
 ### Configuration Classes
 
 The configuration of K2 Applications is contained in two types of class.
@@ -66,9 +74,40 @@ The `Application Configuration` class is any class that has been annotated with 
 Each K2 Application has one and only one `Application Configuration` class. This class provides the root from which the application meta model is reflected.
 The *exact* implementation of the class annotated with the `@MetaApplication` annotation is irrelevant as the meta models reflection of the application is based entirely on the values of the `@MetaApplication` annotation.
 
-| Value | Description |
-|-------|-------------|
-| alias | The alias of the application. This value is used internally to the K2 application when identifying the application configuration |
+| Value        | Description |
+|--------------|-------------|
+| alias        | The alias of the application. This value is used internally to the K2 application when identifying the application configuration |
+| title        | The title of the application. By default this value is displayed on the application splash page |
+| description  | The description of the application. The application description is available through the `About` menu item |
+| version      | The version of the application expressed as a `@MetaVersion` annotation |
+| organisation | The organisation supplying the application |
+| website      | The website of the organisation supplying the application |
+| services     | The services implemented by this application expressed as an array of classes where each class is a `Service Configuration` class |
+
+The code below shows an example of an `Application Configuration` class.
+
+```java
+package example.app;
+
+import com.k2.MetaModel.annotations.MetaApplication;
+import com.k2.MetaModel.annotations.MetaVersion;
+
+import example.app.serviceA.ServiceAConfig;
+import example.app.serviceB.ServiceBConfig;
+
+@MetaApplication(
+		alias="testApplication",
+		title="Test Application",
+		description="This is a dummy application for testing the generation of the metamodel",
+		version=@MetaVersion(major=1, minor=2, point=3, build=1234),
+		organisation="k2.com",
+		website="http://www.k2.com",
+		services= {ServiceAConfig.class, ServiceBConfig.class}
+		)
+public class AppConfig {}
+```
+
+
 
 
 
