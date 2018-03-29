@@ -2,6 +2,8 @@ package com.k2.MetaModel.model.types.classes;
 
 import java.lang.invoke.MethodHandles;
 import java.util.Date;
+import java.util.Set;
+import java.util.TreeSet;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -9,15 +11,18 @@ import org.slf4j.LoggerFactory;
 import com.k2.MetaModel.MetaModelError;
 import com.k2.MetaModel.model.MetaModelType;
 import com.k2.MetaModel.model.types.MetaModelClass;
+import com.k2.MetaModel.model.types.MetaModelPrimitive;
 
 public class MetaModelNative<T> extends MetaModelClass<T> {
 
 	private static final Logger logger = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
+	private static Set<MetaModelNative<?>> natives = new TreeSet<MetaModelNative<?>>();
+			
 	public static MetaModelNative<Integer> INT = new MetaModelNative<Integer>("integer", "Integer class", "The Integer native type", Integer.class);
 	public static MetaModelNative<Long> LONG = new MetaModelNative<Long>("long", "Long class", "The Long native type", Long.class);
 	public static MetaModelNative<Boolean> BOOLEAN = new MetaModelNative<Boolean>("boolean", "Boolean class", "The Boolean native type", Boolean.class);
-	public static MetaModelNative<Float> FLOAT = new MetaModelNative<Float>("float", "Float class", "The Float natove type", Float.class);
+	public static MetaModelNative<Float> FLOAT = new MetaModelNative<Float>("float", "Float class", "The Float native type", Float.class);
 	public static MetaModelNative<Double> DOUBLE = new MetaModelNative<Double>("double", "Double class", "The Double native type", Double.class);
 	public static MetaModelNative<Character> CHAR = new MetaModelNative<Character>("char", "Character class", "The Character native type", Character.class);
 	public static MetaModelNative<Short> SHORT = new MetaModelNative<Short>("short", "Short class", "The Short native type", Short.class);
@@ -25,11 +30,13 @@ public class MetaModelNative<T> extends MetaModelClass<T> {
 	public static MetaModelNative<String> STRING = new MetaModelNative<String>("string", "String class", "The String native type", String.class);
 	public static MetaModelNative<Date> DATE = new MetaModelNative<Date>("date", "Date class", "The Date utility type", Date.class);
 	
-	public MetaModelNative(String alias, String title, String description, Class<T> cls) {
+	private MetaModelNative(String alias, String title, String description, Class<T> cls) {
 		super(alias, title, description, cls);
-		
+		natives.add(this);
 		
 	}
+
+	public static Set<MetaModelNative<?>> getNatives() { return natives; }
 
 	@SuppressWarnings("unchecked")
 	public static <T> MetaModelType<T> staticType(Class<T> cls) {

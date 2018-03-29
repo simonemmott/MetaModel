@@ -8,9 +8,10 @@ import org.slf4j.LoggerFactory;
 import com.k2.MetaModel.annotations.MetaVersion;
 import com.k2.MetaModel.model.MetaModelService;
 import com.k2.MetaModel.model.MetaModelType;
+import com.k2.MetaModel.model.types.MetaModelClass;
 import com.k2.Util.Version.Version;
 
-public class MetaModelTransient<T> extends MetaModelType<T> {
+public class MetaModelTransient<T> extends MetaModelClass<T> {
 
 	private static final Logger logger = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 	

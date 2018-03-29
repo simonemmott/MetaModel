@@ -22,6 +22,8 @@ public class MetaModelEmbeddable<T> extends MetaModelClass<T> {
 
 	private String tableName;
 	public String tableName() { return tableName; }
+	private Version version;
+	public Version version() { return version; }
 	
 	public MetaModelEmbeddable(MetaModelService metaModelService, Class<T> cls) {
 		super(metaModelService, cls);
@@ -33,6 +35,15 @@ public class MetaModelEmbeddable<T> extends MetaModelClass<T> {
 		} else {
 			tableName = cls.getSimpleName();
 		}
+		
+		if (cls.isAnnotationPresent(MetaVersion.class)) {
+			MetaVersion ann = cls.getAnnotation(MetaVersion.class);
+			version = Version.create(ann.major(), ann.minor(), ann.point(), ann.build());
+		} else {
+			version = Version.create();
+		}
+			
+		
 		
 	}
 

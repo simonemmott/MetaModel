@@ -1,23 +1,21 @@
 package com.k2.MetaModel.model.types;
 
 import java.lang.invoke.MethodHandles;
-
-import javax.persistence.Entity;
-import javax.persistence.Table;
+import java.util.Set;
+import java.util.TreeSet;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.k2.MetaModel.MetaModelError;
-import com.k2.MetaModel.annotations.MetaVersion;
-import com.k2.MetaModel.model.MetaModelService;
 import com.k2.MetaModel.model.MetaModelType;
-import com.k2.Util.StringUtil;
-import com.k2.Util.Version.Version;
+import com.k2.MetaModel.model.types.classes.MetaModelNative;
 
 public class MetaModelPrimitive<T> extends MetaModelType<T> {
 
 	private static final Logger logger = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
+	
+	private static Set<MetaModelPrimitive<?>> primitives = new TreeSet<MetaModelPrimitive<?>>();
 
 	public static MetaModelPrimitive<Integer> INT = new MetaModelPrimitive<Integer>("int", "int type", "The int primitive type", int.class);
 	public static MetaModelPrimitive<Long> LONG = new MetaModelPrimitive<Long>("long", "long type", "The long primitive type", long.class);
@@ -29,11 +27,12 @@ public class MetaModelPrimitive<T> extends MetaModelType<T> {
 	public static MetaModelPrimitive<Byte> BYTE = new MetaModelPrimitive<Byte>("byte", "byte type", "The byte primitive type", byte.class);
 	public static MetaModelPrimitive<Void> VOID = new MetaModelPrimitive<Void>("void", "void type", "The void primitive type", void.class);
 	
-	public MetaModelPrimitive(String alias, String title, String description, Class<T> cls) {
+	private MetaModelPrimitive(String alias, String title, String description, Class<T> cls) {
 		super(alias, title, description, cls);
-		
-		
+		primitives.add(this);
 	}
+	
+	public static Set<MetaModelPrimitive<?>> getPrimitives() { return primitives; }
 
 	@SuppressWarnings("unchecked")
 	public static <T> MetaModelType<T> staticType(Class<T> cls) {
@@ -57,6 +56,26 @@ public class MetaModelPrimitive<T> extends MetaModelType<T> {
 			return (MetaModelType<T>) VOID;
 		
 		throw new MetaModelError("Unsupported primitive type {}", cls.getName());
+	}
+	
+	public MetaModelNative<?> metaNativeClass() {
+		if (managedClass == int.class)
+			return MetaModelNative.INT;
+		if (managedClass == long.class)
+			return MetaModelNative.LONG;
+		if (managedClass == boolean.class)
+			return MetaModelNative.BOOLEAN;
+		if (managedClass == float.class)
+			return MetaModelNative.FLOAT;
+		if (managedClass == double.class)
+			return MetaModelNative.DOUBLE;
+		if (managedClass == char.class)
+			return MetaModelNative.CHAR;
+		if (managedClass == short.class)
+			return MetaModelNative.SHORT;
+		if (managedClass == byte.class)
+			return MetaModelNative.BYTE;
+		return null;
 	}
 
 }
