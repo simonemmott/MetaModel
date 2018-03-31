@@ -1,5 +1,6 @@
 package com.k2.MetaModel.model;
 
+import java.io.File;
 import java.lang.invoke.MethodHandles;
 import java.net.MalformedURLException;
 import java.net.URL;
@@ -11,6 +12,9 @@ import java.util.TreeSet;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.k2.ConfigClass.ConfigClass;
+import com.k2.ConfigClass.ConfigLocation;
+import com.k2.ConfigClass.ConfigUtil;
 import com.k2.MetaModel.MetaModelError;
 import com.k2.MetaModel.annotations.MetaApplication;
 import com.k2.Util.StringUtil;
@@ -68,6 +72,36 @@ public class MetaModel {
 			implementedServices.add(service);
 			servicesByAlias.put(service.alias(), service);
 		}
+	}
+	
+	private Object configuration;
+	@SuppressWarnings("unchecked")
+	public <C> C getConfiguration(Class<C> cls) {
+		return (C) configuration;
+	}
+	public Object getConfiguration() { return configuration; }
+	
+	public MetaModel configure(String configPath) {
+		File configDir = new File(configPath);
+		if (! configDir.exists())
+			throw new MetaModelError("Unable to read configuration from {}. The path does not exist", configPath);
+		if (! configDir.isDirectory())
+			throw new MetaModelError("Unable to read configuration from {}. The path is not a directory", configPath);
+		if (! configDir.canRead())
+			throw new MetaModelError("Unable to read configuration from {}. The path is not readable", configPath);
+		
+		if (appConfigClass.isAnnotationPresent(ConfigClass.class)) {
+			ConfigClass appConfiguration = appConfigClass.getAnnotation(ConfigClass.class);
+			String confFileName = configDir.getAbsolutePath()+File.separator+StringUtil.nvl(appConfiguration.filename(), appConfigClass.getSimpleName()+".conf");
+			configuration = ConfigUtil.read(appConfigClass, ConfigLocation.OS_FILE, confFileName);
+		} else {
+			logger.trace("The application configuration class {} is not annotated with @ConfigClass", appConfigClass.getName());
+		}
+			
+		for (MetaModelService metaService : implementedServices()) {
+			metaService.configure(configDir);
+		}
+		return this;
 	}
 
 	public String alias() { return alias; }

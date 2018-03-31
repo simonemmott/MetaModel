@@ -1,6 +1,8 @@
 package com.k2.MetaModel.model;
 
+import java.io.File;
 import java.lang.invoke.MethodHandles;
+import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -23,8 +25,13 @@ import com.k2.MetaModel.model.types.classes.MetaModelEmbeddable;
 import com.k2.MetaModel.model.types.classes.MetaModelEntity;
 import com.k2.MetaModel.model.types.classes.MetaModelNative;
 import com.k2.MetaModel.model.types.classes.MetaModelTransient;
+import com.k2.ConfigClass.ConfigClass;
+import com.k2.ConfigClass.ConfigLocation;
+import com.k2.ConfigClass.ConfigUtil;
 import com.k2.MetaModel.MetaModelError;
 import com.k2.MetaModel.annotations.MetaService;
+import com.k2.MetaModel.annotations.MetaServiceMethod;
+import com.k2.MetaModel.annotations.MetaServiceObject;
 import com.k2.MetaModel.annotations.MetaSubType;
 import com.k2.Util.StringUtil;
 import com.k2.Util.Version.Version;
@@ -44,6 +51,7 @@ public class MetaModelService implements Comparable<MetaModelService>{
 	private String title;
 	private Version version;
 	private String[] modelPackageNames;
+	private String[] servicePackageNames;
 	
 	private Set<MetaModelType<?>> managedTypes = new TreeSet<MetaModelType<?>>();
 	private Map<String, MetaModelType<?>> managedTypesByAlias = new TreeMap<String, MetaModelType<?>>();
@@ -73,6 +81,37 @@ public class MetaModelService implements Comparable<MetaModelService>{
 	private Map<String, MetaModelTransient<?>> managedTransientsByAlias = new TreeMap<String, MetaModelTransient<?>>();
 	private Map<Class<?>, MetaModelTransient<?>> managedTransientsByClass = new HashMap<Class<?>, MetaModelTransient<?>>();
 	
+	private Class<?> serviceClass;
+	private Class<?> serviceInterface;
+	private Class<?> serviceImplementation;
+	private Object serviceObject;
+	private Map<String, ServiceMethodInvoker> serviceMethods = new HashMap<String, ServiceMethodInvoker>();
+	private void registerServiceObject(Class<?> serviceObjectClass) {
+		serviceImplementation = serviceObjectClass;
+		if (serviceInterface == null || ! serviceInterface.isAssignableFrom(serviceObjectClass))
+			throw new MetaModelError("The supplied service model implementation {} is not an implementation of the given service model interface {}", 
+					serviceImplementation.getName(), serviceInterface.getName());
+		try {
+			serviceObject = serviceObjectClass.newInstance();
+		} catch (InstantiationException | IllegalAccessException e) {
+			throw new MetaModelError("Unable to create instance of service object for {}. No available zero arg constructor", serviceObjectClass.getName());
+		}
+		
+		for (Method m : ClassUtil.getAnnotatedMethods(serviceImplementation, MetaServiceMethod.class)) {
+			MetaServiceMethod metaServiceMethod = m.getAnnotation(MetaServiceMethod.class);
+			serviceMethods.put(metaServiceMethod.value(), new ServiceMethodInvoker(serviceObject, m));
+		}
+		
+	}
+	public Map<String, ServiceMethodInvoker> getServiceMethods() { return serviceMethods; }
+	public ServiceMethodInvoker getServiceMethod(String alias) {
+		ServiceMethodInvoker invoker =  serviceMethods.get(alias);
+		if (invoker == null)
+			throw new MetaModelError("No service model defined for the alias {}", alias);
+		return invoker;
+	}
+
+	
 	private List<LinkedMetaType> links = new ArrayList<LinkedMetaType>();
 	public void addLink(LinkedMetaType link) { this.links.add(link); }
 	
@@ -80,7 +119,7 @@ public class MetaModelService implements Comparable<MetaModelService>{
 	private MetaModelService(MetaModel metaModel, Class<?> serviceClass) {
 		if ( ! serviceClass.isAnnotationPresent(MetaService.class))
 			throw new MetaModelError("The given service configuration class {} does not implment the @MetaService annotation.", serviceClass.getName());
-		
+		this.serviceClass = serviceClass;
 		this.metaModel = metaModel;
 
 		metaService = serviceClass.getAnnotation(MetaService.class);
@@ -98,12 +137,24 @@ public class MetaModelService implements Comparable<MetaModelService>{
 			
 			modelPackageNames[i] = (StringUtil.isSet(metaService.modelPackageNames()[i])) ? metaService.modelPackageNames()[i] : serviceClass.getPackage().getName()+".model";
 			
-			logger.info("Scanning package {} and sub packages for implementations of @MetaClass", modelPackageNames[i]);
+			logger.info("Scanning package {} and sub packages for implementations of @MetaType", modelPackageNames[i]);
 			for (Class<?> k2ManagedTypeClass : ClassUtil.getClasses(modelPackageNames[i], MetaType.class)) {
 				register(k2ManagedTypeClass);
 			}
 		}
 
+		if (metaService.serviceInterface() != void.class)
+			serviceInterface = metaService.serviceInterface();
+		
+		if (metaService.serviceImplementation() != void.class) {
+			registerServiceObject(metaService.serviceImplementation());
+		}
+		
+		if ((serviceInterface == null && serviceImplementation != null) || (serviceInterface == null && serviceImplementation != null))
+			throw new MetaModelError("If a service defines a service interface it must also define an implementation of that interface.");
+		
+		
+		
 		while (links.size() > 0) {
 			List<LinkedMetaType> workingList = Arrays.asList(links.toArray(new LinkedMetaType[links.size()]));
 			links.clear();
@@ -112,6 +163,23 @@ public class MetaModelService implements Comparable<MetaModelService>{
 		}
 		links = null;
 	}
+	
+	private Object configuration;
+	void configure(File configDir) {
+		logger.trace("Reading configuration for service {} from service class {}", alias, serviceClass.getName());
+		if (serviceClass.isAnnotationPresent(ConfigClass.class)) {
+			ConfigClass cc = serviceClass.getAnnotation(ConfigClass.class);
+			configuration = ConfigUtil.read(serviceClass, ConfigLocation.OS_FILE, configDir.getAbsolutePath()+File.separator+StringUtil.nvl(cc.filename(), serviceClass.getSimpleName()+".conf"));
+		} else {
+			logger.trace("The service configuration class {} is not annotated with @ConfigClass", serviceClass.getName());
+		}
+
+	}
+	@SuppressWarnings("unchecked")
+	public <C> C getConfiguration(Class<C> cls) {
+		return (C) configuration;
+	}
+	public Object getConfiguration() { return configuration; }
 
 	public <T> MetaModelType<T> reflect(Class<T> cls) {
 		if (cls.isPrimitive()) 
@@ -319,6 +387,8 @@ public class MetaModelService implements Comparable<MetaModelService>{
 	public Version version() { return version; }
 	public String description() { return metaService.description(); }
 	public String[] modelPackageNames() { return modelPackageNames; }
-
+	public String[] servicePackageNames() { return servicePackageNames; }
+	public Class<?> serviceInterface() { return serviceInterface; }
+	public Class<?> serviceImplementation() { return serviceImplementation; }
 
 }

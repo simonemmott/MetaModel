@@ -6,6 +6,7 @@ import static java.lang.annotation.RetentionPolicy.RUNTIME;
 import java.lang.annotation.Retention;
 import java.lang.annotation.Target;
 
+
 @Retention(RUNTIME)
 @Target(TYPE)
 public @interface MetaService {
@@ -17,5 +18,7 @@ public @interface MetaService {
 	public String description() default "";
 	public MetaVersion version() default @MetaVersion(point=1);
 	public String[] modelPackageNames() default {""};
+	public Class<?> serviceInterface() default void.class;
+	public Class<?> serviceImplementation() default void.class;
 	
 }

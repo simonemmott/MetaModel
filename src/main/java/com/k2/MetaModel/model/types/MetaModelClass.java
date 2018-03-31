@@ -96,6 +96,7 @@ public class MetaModelClass<T> extends MetaModelType<T> {
 			
 		if (discriminatorColumn != null) {
 			MetaModelColumn<T> discriminatorTypeColumn = getColumn(discriminatorColumn.name());
+			logger.trace("Identifying discriminator field for class {} with column name {}", cls.getName(), discriminatorColumn.name());
 			if (discriminatorTypeColumn == null)
 				throw new MetaModelError("The discriminator column named {} is not defined as a @Column in the class {}", 
 						discriminatorColumn.name(),
