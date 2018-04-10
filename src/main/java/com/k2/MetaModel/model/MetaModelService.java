@@ -31,7 +31,6 @@ import com.k2.ConfigClass.ConfigUtil;
 import com.k2.MetaModel.MetaModelError;
 import com.k2.MetaModel.annotations.MetaService;
 import com.k2.MetaModel.annotations.MetaServiceMethod;
-import com.k2.MetaModel.annotations.MetaServiceObject;
 import com.k2.MetaModel.annotations.MetaSubType;
 import com.k2.Util.StringUtil;
 import com.k2.Util.Version.Version;
@@ -86,13 +85,14 @@ public class MetaModelService implements Comparable<MetaModelService>{
 	private Class<?> serviceImplementation;
 	private Object serviceObject;
 	private Map<String, ServiceMethodInvoker> serviceMethods = new HashMap<String, ServiceMethodInvoker>();
-	private void registerServiceObject(Class<?> serviceObjectClass) {
+	private <S> void registerServiceObject(Class<S> serviceObjectClass) {
 		serviceImplementation = serviceObjectClass;
 		if (serviceInterface == null || ! serviceInterface.isAssignableFrom(serviceObjectClass))
 			throw new MetaModelError("The supplied service model implementation {} is not an implementation of the given service model interface {}", 
 					serviceImplementation.getName(), serviceInterface.getName());
 		try {
 			serviceObject = serviceObjectClass.newInstance();
+			
 		} catch (InstantiationException | IllegalAccessException e) {
 			throw new MetaModelError("Unable to create instance of service object for {}. No available zero arg constructor", serviceObjectClass.getName());
 		}
@@ -175,6 +175,11 @@ public class MetaModelService implements Comparable<MetaModelService>{
 		}
 
 	}
+	public String getConfigFileName() {
+		ConfigClass cc = serviceClass.getAnnotation(ConfigClass.class);
+		return (cc==null) ? "" : cc.filename();
+	}
+	
 	@SuppressWarnings("unchecked")
 	public <C> C getConfiguration(Class<C> cls) {
 		return (C) configuration;
@@ -388,7 +393,9 @@ public class MetaModelService implements Comparable<MetaModelService>{
 	public String description() { return metaService.description(); }
 	public String[] modelPackageNames() { return modelPackageNames; }
 	public String[] servicePackageNames() { return servicePackageNames; }
+	public Class<?> serviceClass() { return serviceClass; }
 	public Class<?> serviceInterface() { return serviceInterface; }
 	public Class<?> serviceImplementation() { return serviceImplementation; }
+	public Object getServiceObject() { return serviceObject; }
 
 }
