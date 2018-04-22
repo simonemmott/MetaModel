@@ -1,201 +1,100 @@
 package com.k2.MetaModel.criteria;
 
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.HashSet;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Set;
+import java.lang.invoke.MethodHandles;
+import java.util.HashMap;
+import java.util.Map;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import com.google.gson.TypeAdapter;
 import com.google.gson.stream.JsonReader;
-import com.google.gson.stream.JsonToken;
 import com.google.gson.stream.JsonWriter;
 import com.k2.MetaModel.MetaModelError;
-import com.k2.MetaModel.criteria.CriteriaExpression.CriteriaType;
-import com.k2.MetaModel.criteria.DerivedCriteria.DerivationType;
-import com.k2.MetaModel.criteria.SourceCriteria.SourceType;
+import com.k2.MetaModel.annotations.MetaCriteria;
+import com.k2.Util.classes.ClassUtil;
 
-public class CriteriaTypeAdapter extends TypeAdapter<CriteriaExpression<?>>{
-
-	@SuppressWarnings({ "unchecked", "rawtypes" })
-	@Override
-	public CriteriaExpression<?> read(JsonReader reader) throws IOException {
-		reader.beginObject();
-		
-		String alias = null;
-		Integer position = null;
-		Class<?> literalType = null;
-		CriteriaType criteriaType = null;
-
-		String source = null;
-		SourceType sourceType = null;
-
-		List<CriteriaExpression<?>> sources = null;
-		DerivationType derivationType = null;
-
-		while (reader.hasNext()) {
-			JsonToken token = reader.peek();
-			
-			
-			if (token.equals(JsonToken.NAME)) {
-				String expressionType = reader.nextName();
-				switch(expressionType) {
-				case "FIELD":
-				case "PARAMETER":
-					criteriaType = CriteriaType.SOURCE;
-					sourceType = SourceType.valueOf(expressionType);
-					source = reader.nextString();
-					break;
-				case "LITERAL":
-					criteriaType = CriteriaType.SOURCE;
-					sourceType = SourceType.valueOf(expressionType);
-					reader.beginObject();
-					while (reader.hasNext()) {
-						String name = reader.nextName();
-						switch (name) {
-						case "type":
-							String className = reader.nextString();
-							try {
-								literalType = Class.forName(className);
-							} catch (ClassNotFoundException e) {
-								throw new MetaModelError("No class defined for {}", e, className);
-							}
-							break;
-						case "literal":
-							source = reader.nextString();
-							break;
-						default:
-							throw new MetaModelError("Unexpected name in Source JSON at {}", name, reader.getPath());
-						}
-					}
-					reader.endObject();
-					break;
-				case "AND":
-				case "OR":
-					criteriaType = CriteriaType.DERIVED;
-					derivationType = DerivationType.valueOf(expressionType);
-					sources = new ArrayList<CriteriaExpression<?>> ();
-					reader.beginArray();
-					token = reader.peek();
-					while (!reader.peek().equals(JsonToken.END_ARRAY))
-						sources.add(read(reader));
-					reader.endArray();
-					break;
-				case "EQUALS":
-					criteriaType = CriteriaType.DERIVED;
-					derivationType = DerivationType.valueOf(expressionType);
-					sources = new ArrayList<CriteriaExpression<?>> ();
-					reader.beginObject();
-					while (reader.hasNext()) {
-						String name = reader.nextName();
-						CriteriaExpression value = read(reader);
-						value.alias = name;
-						sources.add(value);
-					}
-					reader.endObject();
-					break;
-				case "IS_NULL":
-				case "NOT":
-					criteriaType = CriteriaType.DERIVED;
-					derivationType = DerivationType.valueOf(expressionType);
-					sources = new ArrayList<CriteriaExpression<?>> ();
-					sources.add(read(reader));
-					break;
+public class CriteriaTypeAdapter extends TypeAdapter<CriteriaExpression>{
+	
+	private static final Logger logger = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
+	
+	private static Map<String, ItemAdapter> adapters = readAdapters();
+	private static Map<String, ItemAdapter> readAdapters() {
+		logger.trace("Reading adapters from com.k2.MetaModel.criteria.adapters");
+		Map<String, ItemAdapter> adapters = new HashMap<String, ItemAdapter>();
+		for (Class<?> cls : ClassUtil.getClasses("com.k2.MetaModel.criteria.adapters")) {
+			logger.trace("Found class {}", cls.getName());
+			if (ItemAdapter.class.isAssignableFrom(cls)) {
+				try {
+					ItemAdapter adapter = (ItemAdapter) cls.newInstance();
+					logger.trace("Registering adapter for type {}", adapter.getType());
+					adapters.put(adapter.getType(), adapter);
+				} catch (InstantiationException | IllegalAccessException e) {
+					throw new MetaModelError("Unable to create new instance of criteria item adapter class {} - {}", e, cls.getName(), e.getMessage());
 				}
 			}
-			
 		}
+		return adapters;
+	}
+
+	private final MetaCriteria criteria;
+	public MetaCriteria getCriteria() { return criteria; }
+	
+	public CriteriaTypeAdapter() {
+		this.criteria = null;
+	}
+	public CriteriaTypeAdapter(MetaCriteria criteria) {
+		this.criteria = criteria;
+	}
+	
+	@Override
+	public CriteriaExpression read(JsonReader reader) throws IOException {
+		reader.beginObject();
+		
+		String name = reader.nextName();
+		
+		ItemAdapter adapter = adapters.get(name);
+		
+		if (adapter == null)
+			throw new MetaModelError("No criteria item adapter for {}", name);
+		
+		CriteriaExpression ce = adapter.read(this, reader);
 		
 		reader.endObject();
 		
-		switch(criteriaType) {
-		case DERIVED:
-			return new DerivedCriteria(alias, position, derivationType).setSources(sources);
-		case SOURCE:
-			switch (sourceType) {
-			case FIELD:
-				return SourceCriteria.field(alias, position, source);
-			case LITERAL:
-				return SourceCriteria.literal(alias, position, source, literalType);
-			case PARAMETER:
-				return SourceCriteria.parameter(alias, position, source);
-			default:
-				throw new MetaModelError("Unsupported source type {}", criteriaType);
-			
-			}
-		default:
-			throw new MetaModelError("Unsupported criteria type {}", criteriaType);
+		return ce;
 		
-		}
+		
 	}
 
-	@SuppressWarnings({ "rawtypes", "unchecked" })
+	@SuppressWarnings({ "rawtypes" })
 	@Override
-	public void write(JsonWriter writer, CriteriaExpression<?> ce) throws IOException {
+	public void write(JsonWriter writer, CriteriaExpression ce) throws IOException {
+		String name = null;
+		
+		if (ce instanceof SourceCriteria) 
+			name = ((SourceCriteria)ce).getSourceType().name();
+		else if (ce instanceof DerivedCriteria) 
+			name = ((DerivedCriteria)ce).getDerivationType().name();
+		
+		if (name == null)
+			throw new MetaModelError("Unexpected CriteriaExpression type {}", ce.getClass().getName());
+	
+		ItemAdapter adapter = adapters.get(name);
+		
+		if (adapter == null)
+			throw new MetaModelError("No criteria item adapter for {}", name);
+
 		writer.beginObject();
 		
-		if (ce instanceof SourceCriteria) {
-			SourceCriteria sc = (SourceCriteria)ce;
-			writer.name(sc.getSourceType().name());
-			
-			switch (sc.getSourceType()) {
-			case FIELD:
-				writer.value(sc.getSource());
-				break;
-			case LITERAL:
-				writer.beginObject();
-				writer.name("type").value(sc.getLiteralType().getName());
-				writer.name("literal").value(sc.getSource());
-				writer.endObject();
-				break;
-			case PARAMETER:
-				writer.value(sc.getSource());
-				break;
-			default:
-				throw new MetaModelError("Unhandled source type {}", sc.getSourceType().name());
-			
-			}
-			
-			
-			
-		} else if (ce instanceof DerivedCriteria) {
-			DerivedCriteria dc = (DerivedCriteria)ce;
-			writer.name(dc.getDerivationType().name());
-			
-			List<CriteriaExpression<?>> sources = dc.getSources();
-			Iterator<CriteriaExpression<?>> i = sources.iterator();
-
-			switch (dc.getDerivationType()) {
-			case AND:
-			case OR:
-				writer.beginArray();
-				for (CriteriaExpression source : sources)
-					write(writer, source);
-				writer.endArray();
-				break;
-			case EQUALS:
-				writer.beginObject();
-				for (CriteriaExpression source : sources) {
-					writer.name(source.getAlias());
-					write(writer, source);
-				}
-				writer.endObject();
-				break;
-			case IS_NULL:
-			case NOT:
-				if (i.hasNext()) 
-					write(writer, i.next());
-				else
-					writer.nullValue();
-				break;
-			default:
-				throw new MetaModelError("Unhandled derivation type {}", dc.getDerivationType().name());
-			}
-			
-		}
+		writer.name(name);
+		
+		adapter.write(this, writer, ce);
 		
 		writer.endObject();
+		
+		return;
 		
 	}
 

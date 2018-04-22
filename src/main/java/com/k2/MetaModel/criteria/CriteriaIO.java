@@ -5,17 +5,20 @@ import java.io.StringWriter;
 
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
+import com.k2.MetaModel.annotations.MetaCriteria;
 
 public class CriteriaIO {
 	
-	public static CriteriaIO compact() { return new CriteriaIO(true); }
-	public static CriteriaIO verbose() { return new CriteriaIO(false); }
+	public static CriteriaIO compact() { return new CriteriaIO(null, true); }
+	public static CriteriaIO compact(MetaCriteria criteria) { return new CriteriaIO(criteria, true); }
+	public static CriteriaIO verbose() { return new CriteriaIO(null, false); }
+	public static CriteriaIO verbose(MetaCriteria criteria) { return new CriteriaIO(criteria, false); }
 	
 	private Gson gson;
 	public void setGson(Gson gson) { this.gson = gson; }
 	
-	private CriteriaIO(boolean compact) {
-		CriteriaTypeAdapter cta = new CriteriaTypeAdapter();
+	private CriteriaIO(MetaCriteria criteria, boolean compact) {
+		CriteriaTypeAdapter cta = new CriteriaTypeAdapter(criteria);
 		if (compact)
 			gson = new GsonBuilder()
 					.registerTypeAdapter(DerivedCriteria.class, cta)
@@ -31,7 +34,7 @@ public class CriteriaIO {
 					.create();
 	}
 	
-	public String toString(CriteriaExpression<?> ce) {
+	public String toString(CriteriaExpression ce) {
 		
 		StringWriter sw = new StringWriter();
 		gson.toJson(ce, sw);
@@ -40,10 +43,10 @@ public class CriteriaIO {
 		
 	}
 
-	public CriteriaExpression<?> fromString(String criteria) {
+	public CriteriaExpression fromString(String criteria) {
 		
 		StringReader sr = new StringReader(criteria);
-		CriteriaExpression<?> ce = gson.fromJson(sr, CriteriaExpression.class);
+		CriteriaExpression ce = gson.fromJson(sr, CriteriaExpression.class);
 		return ce;
 	}
 }

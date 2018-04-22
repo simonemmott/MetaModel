@@ -8,10 +8,8 @@ import java.lang.annotation.Target;
 
 @Retention(RUNTIME)
 @Target({ TYPE })
-public @interface MetaCriteria {
+public @interface MetaCriteriaParameter {
 
-	public String alias();
-	public String criteria();
-	public MetaCriteriaParameter[] parameters();
-	
+	public String name();
+	public Class<?> type();
 }

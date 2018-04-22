@@ -1,57 +1,59 @@
 package com.k2.MetaModel.criteria;
 
-public class SourceCriteria<T> extends CriteriaExpression<T>{
+import com.k2.MetaModel.MetaModelError;
+import com.k2.Util.classes.ClassUtil;
+
+public class SourceCriteria<T> extends CriteriaExpression{
 	
 	public enum SourceType {
 		PARAMETER,
 		FIELD,
-		LITERAL;
+		LITERAL,
+		ENUM,
+		CLASS;
 	}
 	
-	@SuppressWarnings({ "rawtypes", "unchecked" })
-	public static SourceCriteria parameter(String parameter) {
-		SourceCriteria sc = new SourceCriteria();
+	public static <T> SourceCriteria<T> parameter(String parameter, Class<T> javaType) {
+		SourceCriteria<T> sc = new SourceCriteria<T>();
 		sc.sourceType = SourceType.PARAMETER;
 		sc.source = parameter;
+		sc.javaType = javaType;
 		return sc;
 	}
-	@SuppressWarnings({ "rawtypes", "unchecked" })
-	public static SourceCriteria parameter(String alias, String parameter) {
-		SourceCriteria sc = new SourceCriteria(alias);
+	public static <T> SourceCriteria<T> parameter(String alias, String parameter, Class<T> javaType) {
+		SourceCriteria<T> sc = new SourceCriteria<T>(alias);
 		sc.sourceType = SourceType.PARAMETER;
 		sc.source = parameter;
+		sc.javaType = javaType;
 		return sc;
 	}
-	@SuppressWarnings({ "rawtypes", "unchecked" })
-	public static SourceCriteria parameter(String alias, Integer position, String parameter) {
-		SourceCriteria sc = new SourceCriteria(alias, position);
+	public static <T> SourceCriteria<T> parameter(String alias, Integer position, String parameter, Class<T> javaType) {
+		SourceCriteria<T> sc = new SourceCriteria<T>(alias, position);
 		sc.sourceType = SourceType.PARAMETER;
 		sc.source = parameter;
+		sc.javaType = javaType;
 		return sc;
 	}
 	
-	@SuppressWarnings({ "rawtypes", "unchecked" })
-	public static <T> SourceCriteria<T> literal(String literal, Class<T> literalType) {
-		SourceCriteria sc = new SourceCriteria();
+	public static <T> SourceCriteria<T> literal(String literal, Class<T> javaType) {
+		SourceCriteria<T> sc = new SourceCriteria<T>();
 		sc.sourceType = SourceType.LITERAL;
 		sc.source = literal;
-		sc.literalType = literalType;
+		sc.javaType = javaType;
 		return sc;
 	}
-	@SuppressWarnings({ "rawtypes", "unchecked" })
-	public static <T> SourceCriteria<T> literal(String alias, String literal, Class<T> literalType) {
-		SourceCriteria sc = new SourceCriteria(alias);
+	public static <T> SourceCriteria<T> literal(String alias, String literal, Class<T> javaType) {
+		SourceCriteria<T> sc = new SourceCriteria<T>(alias);
 		sc.sourceType = SourceType.LITERAL;
 		sc.source = literal;
-		sc.literalType = literalType;
+		sc.javaType = javaType;
 		return sc;
 	}
-	@SuppressWarnings({ "rawtypes", "unchecked" })
-	public static <T> SourceCriteria<T> literal(String alias, Integer position, String literal, Class<T> literalType) {
-		SourceCriteria sc = new SourceCriteria(alias, position);
+	public static <T> SourceCriteria<T> literal(String alias, Integer position, String literal, Class<T> javaType) {
+		SourceCriteria<T> sc = new SourceCriteria<T>(alias, position);
 		sc.sourceType = SourceType.LITERAL;
 		sc.source = literal;
-		sc.literalType = literalType;
+		sc.javaType = javaType;
 		return sc;
 	}
 	
@@ -77,11 +79,86 @@ public class SourceCriteria<T> extends CriteriaExpression<T>{
 		return sc;
 	}
 	
+	@SuppressWarnings({ "rawtypes", "unchecked" })
+	public static <T> SourceCriteria<T> className(String className) {
+		SourceCriteria sc = new SourceCriteria();
+		sc.sourceType = SourceType.CLASS;
+		sc.source = className;
+		return sc;
+	}
+	@SuppressWarnings({ "rawtypes", "unchecked" })
+	public static <T> SourceCriteria<T> className(String alias, String className) {
+		SourceCriteria sc = new SourceCriteria(alias);
+		sc.sourceType = SourceType.CLASS;
+		sc.source = className;
+		return sc;
+	}
+	@SuppressWarnings({ "rawtypes", "unchecked" })
+	public static <T> SourceCriteria<T> className(String alias, Integer position, String className) {
+		SourceCriteria sc = new SourceCriteria(alias, position);
+		sc.sourceType = SourceType.CLASS;
+		sc.source = className;
+		return sc;
+	}
+	
+	@SuppressWarnings({ "rawtypes", "unchecked" })
+	public static <T> SourceCriteria<T> enumeration(String enumeration) {
+		SourceCriteria sc = new SourceCriteria();
+		sc.sourceType = SourceType.ENUM;
+		sc.source = enumeration;
+		return sc;
+	}
+	@SuppressWarnings({ "rawtypes", "unchecked" })
+	public static <T> SourceCriteria<T> enumeration(String alias, String enumeration) {
+		SourceCriteria sc = new SourceCriteria(alias);
+		sc.sourceType = SourceType.ENUM;
+		sc.source = enumeration;
+		return sc;
+	}
+	@SuppressWarnings({ "rawtypes", "unchecked" })
+	public static <T> SourceCriteria<T> enumeration(String alias, Integer position, String enumeration) {
+		SourceCriteria sc = new SourceCriteria(alias, position);
+		sc.sourceType = SourceType.ENUM;
+		sc.source = enumeration;
+		return sc;
+	}
+	
 	private String source;
 	public String getSource() { return source; }
 	
-	private Class<T> literalType;
-	public Class<T> getLiteralType() { return literalType; }
+	private Class<T> javaType;
+	public Class<T> getLiteralType() { return javaType; }
+	
+	@SuppressWarnings("unchecked")
+	public T getSourceClass() {
+		if (sourceType == SourceType.CLASS) {
+			try {
+				return (T) Class.forName(source);
+			} catch (ClassNotFoundException e) {
+				throw new MetaModelError("No class defined for the given criteria source class {}", e, source);
+			}
+		}
+		return null;
+	}
+	
+	@SuppressWarnings("unchecked")
+	public Class<T> getSourceEnum() {
+		if (sourceType == SourceType.ENUM) {
+			String enumName = ClassUtil.getPackageNameFromCanonicalName(source);
+			try {
+				return (Class<T>) Class.forName(enumName);
+			} catch (ClassNotFoundException e) {
+				throw new MetaModelError("No enumeration defined for the given criteria source enumeration {}", e, source);
+			}
+		}
+		return null;
+	}
+	
+	@SuppressWarnings("unchecked")
+	public <E extends Enum<E>> T getSourceEnumValue() {
+		Class<E> enumClass = (Class<E>) getSourceEnum();
+		return (T) Enum.valueOf(enumClass, ClassUtil.getBasenameFromCanonicalName(source));
+	}
 		
 	private SourceType sourceType;
 	public SourceType getSourceType() { return sourceType; }

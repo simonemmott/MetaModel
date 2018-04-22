@@ -1,6 +1,6 @@
 package com.k2.MetaModel.criteria;
 
-public class CriteriaExpression<T> {
+public class CriteriaExpression {
 
 	public enum CriteriaType {
 		SOURCE,
@@ -9,9 +9,11 @@ public class CriteriaExpression<T> {
 	
 	protected String alias;
 	public String getAlias() { return alias; }
+	public void setAlias(String alias) { this.alias = alias; }
 	
 	protected Integer position;
 	public Integer getPosition() { return position; }
+	public void setPosition(Integer position) { this.position = position; }
 	
 	protected CriteriaType criteriaType;
 	public CriteriaType getCriteriaType() { return criteriaType; }
